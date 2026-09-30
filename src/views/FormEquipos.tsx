@@ -110,7 +110,7 @@ export default function FormEquipos() {
 
         if (hayCamposVacios) {
             setMensaje(
-                "Todos los campos son obligatorios, excepto Observaciones."
+                "Todos los campos son obligatorios."
             );
             setTimeout(
                 () => setMensaje(""),
