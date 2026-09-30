@@ -174,10 +174,8 @@ export default function Reportes() {
 
       const avancePorcentaje =
         totalBD > 0
-          ? Number(
-            ((realizados / totalBD) * 100).toFixed(2)
-          )
-          : 0
+          ? Number(((realizados / totalBD) * 100).toFixed(1))
+          : 0;
 
 
       return {
@@ -199,9 +197,7 @@ export default function Reportes() {
     })
 
 
-    // =================================================
-    // TOTALES GENERALES
-    // =================================================
+
 
     const totalInventario =
       equiposTotales.length ||
@@ -216,10 +212,8 @@ export default function Reportes() {
 
     const porcentajeGlobal =
       totalInventario > 0
-        ? Number(
-          ((totalRealizados / totalInventario) * 100).toFixed(2)
-        )
-        : 0
+        ? Number(((totalRealizados / totalInventario) * 100).toFixed(1))
+        : 0;
 
 
     return {
