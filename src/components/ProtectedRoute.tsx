@@ -1,35 +1,38 @@
 import { Navigate } from "react-router-dom";
 
 interface ProtectedRouteProps {
-    children: React.ReactNode;
+  children: React.ReactNode;
+  roles?: string[];
 }
 
 export default function ProtectedRoute({
-    children
+  children,
+  roles
 }: ProtectedRouteProps) {
+  const usuarioGuardado = localStorage.getItem("usuario");
 
-    const usuarioGuardado =
-        localStorage.getItem("usuario");
+  // No hay sesión
+  if (!usuarioGuardado) {
+    return <Navigate to="/" replace />;
+  }
 
+  let usuario;
 
-    if (!usuarioGuardado) {
+  try {
+    usuario = JSON.parse(usuarioGuardado);
+  } catch (error) {
+    console.error("Error leyendo sesión:", error);
 
-        return <Navigate to="/" replace />;
+    localStorage.removeItem("usuario");
+    localStorage.removeItem("ultimaActividad");
 
-    }
-
-
-    const usuario =
-        JSON.parse(usuarioGuardado);
-
-
-    if (usuario.rol !== "admin") {
-
-        return <Navigate to="/" replace />;
-
-    }
+    return <Navigate to="/" replace />;
+  }
 
 
-    return children;
+  if (roles && !roles.includes(usuario.rol)) {
+    return <Navigate to="/" replace />;
+  }
 
+  return <>{children}</>;
 }
