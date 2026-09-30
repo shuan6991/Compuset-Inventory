@@ -31,9 +31,7 @@ export default function Reportes() {
     useRef<HTMLDivElement>(null)
 
 
-  // =====================================================
-  // COLORES
-  // =====================================================
+
 
   const COLORES = [
     '#2563eb',
@@ -176,8 +174,8 @@ export default function Reportes() {
 
       const avancePorcentaje =
         totalBD > 0
-          ? Math.round(
-            (realizados / totalBD) * 100
+          ? Number(
+            ((realizados / totalBD) * 100).toFixed(2)
           )
           : 0
 
@@ -218,8 +216,8 @@ export default function Reportes() {
 
     const porcentajeGlobal =
       totalInventario > 0
-        ? Math.round(
-          (totalRealizados / totalInventario) * 100
+        ? Number(
+          ((totalRealizados / totalInventario) * 100).toFixed(2)
         )
         : 0
 
@@ -716,7 +714,7 @@ export default function Reportes() {
 
           tipo:
             tipo?.nombre ||
-            eq.tipo,         
+            eq.tipo,
 
           ciudad: eq.ciudad,
 
@@ -724,7 +722,7 @@ export default function Reportes() {
 
           area: eq.area,
 
-    
+
 
         })
 
@@ -882,7 +880,7 @@ export default function Reportes() {
 
           tipo:
             tipo?.nombre ||
-            eq.tipo,        
+            eq.tipo,
 
           ciudad: eq.ciudad,
 
@@ -890,7 +888,7 @@ export default function Reportes() {
 
           area: eq.area,
 
-       
+
 
         })
 
