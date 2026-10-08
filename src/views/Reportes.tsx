@@ -310,842 +310,911 @@ export default function Reportes() {
   // EXPORTAR EXCEL
   // =====================================================
 
-  const exportarExcel = async () => {
+ const exportarExcel = async () => {
 
-    try {
+  try {
 
-      if (
-        !graficaRealizadosRef.current ||
-        !graficaFaltantesRef.current
-      ) {
-
-        alert(
-          "No se pudieron encontrar las gráficas."
-        )
-
-        return
-
-      }
-
-
-      if (categoriasFiltradas.length === 0) {
-
-        alert(
-          "No hay datos para exportar."
-        )
-
-        return
-
-      }
-
-
-      // =================================================
-      // CONVERTIR GRÁFICAS A PNG
-      // =================================================
-
-      const imagenRealizados =
-        await toPng(
-          graficaRealizadosRef.current,
-          {
-            pixelRatio: 2,
-            backgroundColor: '#ffffff'
-          }
-        )
-
-
-      const imagenFaltantes =
-        await toPng(
-          graficaFaltantesRef.current,
-          {
-            pixelRatio: 2,
-            backgroundColor: '#ffffff'
-          }
-        )
-
-
-      // =================================================
-      // CREAR LIBRO
-      // =================================================
-
-      const workbook =
-        new ExcelJS.Workbook()
-
-
-      workbook.creator =
-        'Compu Inventory'
-
-      workbook.created =
-        new Date()
-
-      workbook.modified =
-        new Date()
-
-
-      // =================================================
-      // HOJA RESUMEN
-      // =================================================
-
-      const resumen =
-        workbook.addWorksheet('Resumen')
-
-
-      resumen.columns = [
-
-        {
-          header: 'Indicador',
-          key: 'indicador',
-          width: 30
-        },
-
-        {
-          header: 'Valor',
-          key: 'valor',
-          width: 25
-        }
-
-      ]
-
-
-      resumen.addRow({
-
-        indicador: 'Total Equipos',
-
-        valor:
-          categoriaFiltro === 'todas'
-            ? reportesData.totalInventario
-            : categoriasFiltradas[0]?.totalBD || 0
-
-      })
-
-
-      resumen.addRow({
-
-        indicador: 'Total Con Mantenimiento',
-
-        valor:
-          categoriaFiltro === 'todas'
-            ? reportesData.totalRealizados
-            : categoriasFiltradas[0]?.realizados || 0
-
-      })
-
-
-      resumen.addRow({
-
-        indicador: 'Total Faltantes',
-
-        valor:
-          categoriaFiltro === 'todas'
-            ? reportesData.totalFaltantes
-            : categoriasFiltradas[0]?.faltantes || 0
-
-      })
-
-
-      resumen.addRow({
-
-        indicador: 'Progreso Global',
-
-        valor:
-          categoriaFiltro === 'todas'
-            ? `${reportesData.porcentajeGlobal}%`
-            : `${categoriasFiltradas[0]?.avancePorcentaje || 0}%`
-
-      })
-
-
-      resumen.addRow({
-
-        indicador: 'Categoría',
-
-        valor:
-          categoriaFiltro === 'todas'
-            ? 'Todas las categorías'
-            : categoriasFiltradas[0]?.nombre || ''
-
-      })
-
-
-      // =================================================
-      // ESTILO RESUMEN
-      // =================================================
-
-      resumen.getRow(1).font = {
-
-        bold: true,
-
-        color: {
-          argb: 'FFFFFF'
-        }
-
-      }
-
-
-      resumen.getRow(1).fill = {
-
-        type: 'pattern',
-
-        pattern: 'solid',
-
-        fgColor: {
-          argb: '1E40AF'
-        }
-
-      }
-
-
-      resumen.getRow(1).alignment = {
-
-        vertical: 'middle',
-
-        horizontal: 'center'
-
-      }
-
-
-      // =================================================
-      // HOJA TABLA
-      // =================================================
-
-      const tabla =
-        workbook.addWorksheet('Tabla')
-
-
-      tabla.columns = [
-
-        {
-          header: 'Categoría / Tipo',
-          key: 'categoria',
-          width: 30
-        },
-
-        {
-          header: 'Inventario Total BD',
-          key: 'inventario',
-          width: 22
-        },
-
-        {
-          header: 'Realizados',
-          key: 'realizados',
-          width: 15
-        },
-
-        {
-          header: 'Faltantes',
-          key: 'faltantes',
-          width: 15
-        },
-
-        {
-          header: '% Cumplimiento',
-          key: 'cumplimiento',
-          width: 20
-        }
-
-      ]
-
-
-      categoriasFiltradas.forEach(cat => {
-
-        tabla.addRow({
-
-          categoria: cat.nombre,
-
-          inventario: cat.totalBD,
-
-          realizados: cat.realizados,
-
-          faltantes: cat.faltantes,
-
-          cumplimiento:
-            `${cat.avancePorcentaje}%`
-
-        })
-
-      })
-
-
-      // =================================================
-      // ESTILO TABLA
-      // =================================================
-
-      const encabezadoTabla =
-        tabla.getRow(1)
-
-
-      encabezadoTabla.font = {
-
-        bold: true,
-
-        color: {
-          argb: 'FFFFFF'
-        }
-
-      }
-
-
-      encabezadoTabla.fill = {
-
-        type: 'pattern',
-
-        pattern: 'solid',
-
-        fgColor: {
-          argb: '1E40AF'
-        }
-
-      }
-
-
-      encabezadoTabla.alignment = {
-
-        vertical: 'middle',
-
-        horizontal: 'center'
-
-      }
-
-
-      // =================================================
-      // HOJA REALIZADOS
-      // =================================================
-
-      const realizadosSheet =
-        workbook.addWorksheet('Realizados')
-
-
-      realizadosSheet.columns = [
-
-        {
-          header: 'Activo',
-          key: 'activo',
-          width: 18
-        },
-
-        {
-          header: 'Serie',
-          key: 'serie',
-          width: 22
-        },
-
-        {
-          header: 'Marca',
-          key: 'marca',
-          width: 20
-        },
-
-        {
-          header: 'Modelo',
-          key: 'modelo',
-          width: 25
-        },
-
-        {
-          header: 'Tipo',
-          key: 'tipo',
-          width: 20
-        },
-
-        {
-          header: 'Windows',
-          key: 'windows',
-          width: 18
-        },
-
-        {
-          header: 'Office',
-          key: 'office',
-          width: 18
-        },
-
-        {
-          header: 'Ciudad',
-          key: 'ciudad',
-          width: 20
-        },
-
-        {
-          header: 'Sede',
-          key: 'sede',
-          width: 20
-        },
-
-        {
-          header: 'Área',
-          key: 'area',
-          width: 25
-        },
-
-        {
-          header: 'Localización',
-          key: 'localizacion',
-          width: 25
-        }
-
-      ]
-
-
-      equiposRealizadosFiltrados.forEach(eq => {
-
-        const tipo =
-          state.tipo?.find(
-            t =>
-              String(t.id) ===
-              String(eq.tipo)
-          )
-
-
-        realizadosSheet.addRow({
-
-          activo: eq.activo,
-
-          serie: eq.serie,
-
-          marca: eq.marca,
-
-          modelo: eq.modelo,
-
-          tipo:
-            tipo?.nombre ||
-            eq.tipo,
-
-          ciudad: eq.ciudad,
-
-          sede: eq.sede,
-
-          area: eq.area,
-
-
-
-        })
-
-      })
-
-
-      // =================================================
-      // ESTILO REALIZADOS
-      // =================================================
-
-      const encabezadoRealizados =
-        realizadosSheet.getRow(1)
-
-
-      encabezadoRealizados.font = {
-
-        bold: true,
-
-        color: {
-          argb: 'FFFFFF'
-        }
-
-      }
-
-
-      encabezadoRealizados.fill = {
-
-        type: 'pattern',
-
-        pattern: 'solid',
-
-        fgColor: {
-          argb: '16A34A'
-        }
-
-      }
-
-
-      encabezadoRealizados.alignment = {
-
-        vertical: 'middle',
-
-        horizontal: 'center'
-
-      }
-
-
-      realizadosSheet.autoFilter = {
-
-        from: 'A1',
-
-        to: 'K1'
-
-      }
-
-
-      // =================================================
-      // HOJA FALTANTES
-      // =================================================
-
-      const faltantesSheet =
-        workbook.addWorksheet('Faltantes')
-
-
-      faltantesSheet.columns = [
-
-        {
-          header: 'Activo',
-          key: 'activo',
-          width: 18
-        },
-
-        {
-          header: 'Serie',
-          key: 'serie',
-          width: 22
-        },
-
-        {
-          header: 'Marca',
-          key: 'marca',
-          width: 20
-        },
-
-        {
-          header: 'Modelo',
-          key: 'modelo',
-          width: 25
-        },
-
-        {
-          header: 'Tipo',
-          key: 'tipo',
-          width: 20
-        },
-
-        {
-          header: 'Windows',
-          key: 'windows',
-          width: 18
-        },
-
-        {
-          header: 'Office',
-          key: 'office',
-          width: 18
-        },
-
-        {
-          header: 'Ciudad',
-          key: 'ciudad',
-          width: 20
-        },
-
-        {
-          header: 'Sede',
-          key: 'sede',
-          width: 20
-        },
-
-        {
-          header: 'Área',
-          key: 'area',
-          width: 25
-        },
-
-        {
-          header: 'Localización',
-          key: 'localizacion',
-          width: 25
-        }
-
-      ]
-
-
-      equiposFaltantesFiltrados.forEach(eq => {
-
-        const tipo =
-          state.tipo?.find(
-            t =>
-              String(t.id) ===
-              String(eq.tipo)
-          )
-
-
-        faltantesSheet.addRow({
-
-          activo: eq.activo,
-
-          serie: eq.serie,
-
-          marca: eq.marca,
-
-          modelo: eq.modelo,
-
-          tipo:
-            tipo?.nombre ||
-            eq.tipo,
-
-          ciudad: eq.ciudad,
-
-          sede: eq.sede,
-
-          area: eq.area,
-
-
-
-        })
-
-      })
-
-
-      // =================================================
-      // ESTILO FALTANTES
-      // =================================================
-
-      const encabezadoFaltantes =
-        faltantesSheet.getRow(1)
-
-
-      encabezadoFaltantes.font = {
-
-        bold: true,
-
-        color: {
-          argb: 'FFFFFF'
-        }
-
-      }
-
-
-      encabezadoFaltantes.fill = {
-
-        type: 'pattern',
-
-        pattern: 'solid',
-
-        fgColor: {
-          argb: 'EA580C'
-        }
-
-      }
-
-
-      encabezadoFaltantes.alignment = {
-
-        vertical: 'middle',
-
-        horizontal: 'center'
-
-      }
-
-
-      faltantesSheet.autoFilter = {
-
-        from: 'A1',
-
-        to: 'K1'
-
-      }
-
-
-      // =================================================
-      // HOJA GRÁFICAS
-      // =================================================
-
-      const graficas =
-        workbook.addWorksheet('Gráficas')
-
-
-      graficas.getCell('A1').value =
-        'Reporte de Mantenimientos - Compu Inventory'
-
-
-      graficas.getCell('A1').font = {
-
-        bold: true,
-
-        size: 18,
-
-        color: {
-          argb: '1E40AF'
-        }
-
-      }
-
-
-      graficas.getCell('A3').value =
-        'Equipos con mantenimiento por categoría'
-
-
-      graficas.getCell('A3').font = {
-
-        bold: true,
-
-        size: 14
-
-      }
-
-
-      // =================================================
-      // GRÁFICA REALIZADOS
-      // =================================================
-
-      const imagenRealizadosId =
-        workbook.addImage({
-
-          base64:
-            imagenRealizados,
-
-          extension: 'png'
-
-        })
-
-
-      graficas.addImage(
-
-        imagenRealizadosId,
-
-        {
-
-          tl: {
-
-            col: 0,
-
-            row: 4
-
-          },
-
-          ext: {
-
-            width: 700,
-
-            height: 400
-
-          }
-
-        }
-
-      )
-
-
-      // =================================================
-      // GRÁFICA FALTANTES
-      // =================================================
-
-      graficas.getCell('A26').value =
-        'Equipos faltantes por categoría'
-
-
-      graficas.getCell('A26').font = {
-
-        bold: true,
-
-        size: 14
-
-      }
-
-
-      const imagenFaltantesId =
-        workbook.addImage({
-
-          base64:
-            imagenFaltantes,
-
-          extension: 'png'
-
-        })
-
-
-      graficas.addImage(
-
-        imagenFaltantesId,
-
-        {
-
-          tl: {
-
-            col: 0,
-
-            row: 27
-
-          },
-
-          ext: {
-
-            width: 700,
-
-            height: 400
-
-          }
-
-        }
-
-      )
-
-
-      // =================================================
-      // GENERAR ARCHIVO
-      // =================================================
-
-      const buffer =
-        await workbook.xlsx.writeBuffer()
-
-
-      // =================================================
-      // DESCARGAR
-      // =================================================
-
-      const blob =
-        new Blob(
-
-          [buffer],
-
-          {
-
-            type:
-              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
-          }
-
-        )
-
-
-      const url =
-        window.URL.createObjectURL(blob)
-
-
-      const enlace =
-        document.createElement('a')
-
-
-      enlace.href = url
-
-
-      const nombreCategoria =
-        categoriaFiltro === 'todas'
-          ? 'Todas'
-          : categoriasFiltradas[0]?.nombre ||
-          'Categoria'
-
-
-      enlace.download =
-        `Reporte_CompuInventory_${nombreCategoria}.xlsx`
-
-
-      document.body.appendChild(enlace)
-
-      enlace.click()
-
-      document.body.removeChild(enlace)
-
-      window.URL.revokeObjectURL(url)
-
-
-    } catch (error) {
-
-      console.error(
-        'Error exportando Excel:',
-        error
-      )
+    if (
+      !graficaRealizadosRef.current ||
+      !graficaFaltantesRef.current
+    ) {
 
       alert(
-        'Ocurrió un error al generar el Excel.'
+        "No se pudieron encontrar las gráficas."
       )
+
+      return
 
     }
 
+
+    if (categoriasFiltradas.length === 0) {
+
+      alert(
+        "No hay datos para exportar."
+      )
+
+      return
+
+    }
+
+
+    // =================================================
+    // CONVERTIR GRÁFICAS A PNG
+    // =================================================
+
+    const imagenRealizados =
+      await toPng(
+        graficaRealizadosRef.current,
+        {
+          pixelRatio: 2,
+          backgroundColor: '#ffffff'
+        }
+      )
+
+
+    const imagenFaltantes =
+      await toPng(
+        graficaFaltantesRef.current,
+        {
+          pixelRatio: 2,
+          backgroundColor: '#ffffff'
+        }
+      )
+
+
+    // =================================================
+    // CREAR LIBRO
+    // =================================================
+
+    const workbook =
+      new ExcelJS.Workbook()
+
+
+    workbook.creator =
+      'Compu Inventory'
+
+    workbook.created =
+      new Date()
+
+    workbook.modified =
+      new Date()
+
+
+    // =================================================
+    // HOJA RESUMEN
+    // =================================================
+
+    const resumen =
+      workbook.addWorksheet('Resumen')
+
+
+    resumen.columns = [
+
+      {
+        header: 'Indicador',
+        key: 'indicador',
+        width: 30
+      },
+
+      {
+        header: 'Valor',
+        key: 'valor',
+        width: 25
+      }
+
+    ]
+
+
+    resumen.addRow({
+
+      indicador: 'Total Equipos',
+
+      valor:
+        categoriaFiltro === 'todas'
+          ? reportesData.totalInventario
+          : categoriasFiltradas[0]?.totalBD || 0
+
+    })
+
+
+    resumen.addRow({
+
+      indicador: 'Total Con Mantenimiento',
+
+      valor:
+        categoriaFiltro === 'todas'
+          ? reportesData.totalRealizados
+          : categoriasFiltradas[0]?.realizados || 0
+
+    })
+
+
+    resumen.addRow({
+
+      indicador: 'Total Faltantes',
+
+      valor:
+        categoriaFiltro === 'todas'
+          ? reportesData.totalFaltantes
+          : categoriasFiltradas[0]?.faltantes || 0
+
+    })
+
+
+    resumen.addRow({
+
+      indicador: 'Progreso Global',
+
+      valor:
+        categoriaFiltro === 'todas'
+          ? `${reportesData.porcentajeGlobal}%`
+          : `${categoriasFiltradas[0]?.avancePorcentaje || 0}%`
+
+    })
+
+
+    resumen.addRow({
+
+      indicador: 'Categoría',
+
+      valor:
+        categoriaFiltro === 'todas'
+          ? 'Todas las categorías'
+          : categoriasFiltradas[0]?.nombre || ''
+
+    })
+
+
+    // =================================================
+    // ESTILO RESUMEN
+    // =================================================
+
+    resumen.getRow(1).font = {
+
+      bold: true,
+
+      color: {
+        argb: 'FFFFFF'
+      }
+
+    }
+
+
+    resumen.getRow(1).fill = {
+
+      type: 'pattern',
+
+      pattern: 'solid',
+
+      fgColor: {
+        argb: '1E40AF'
+      }
+
+    }
+
+
+    resumen.getRow(1).alignment = {
+
+      vertical: 'middle',
+
+      horizontal: 'center'
+
+    }
+
+
+    // =================================================
+    // HOJA TABLA
+    // =================================================
+
+    const tabla =
+      workbook.addWorksheet('Tabla')
+
+
+    tabla.columns = [
+
+      {
+        header: 'Categoría / Tipo',
+        key: 'categoria',
+        width: 30
+      },
+
+      {
+        header: 'Inventario Total BD',
+        key: 'inventario',
+        width: 22
+      },
+
+      {
+        header: 'Realizados',
+        key: 'realizados',
+        width: 15
+      },
+
+      {
+        header: 'Faltantes',
+        key: 'faltantes',
+        width: 15
+      },
+
+      {
+        header: '% Cumplimiento',
+        key: 'cumplimiento',
+        width: 20
+      }
+
+    ]
+
+
+    categoriasFiltradas.forEach(cat => {
+
+      tabla.addRow({
+
+        categoria: cat.nombre,
+
+        inventario: cat.totalBD,
+
+        realizados: cat.realizados,
+
+        faltantes: cat.faltantes,
+
+        cumplimiento:
+          `${cat.avancePorcentaje}%`
+
+      })
+
+    })
+
+
+    // =================================================
+    // ESTILO TABLA
+    // =================================================
+
+    const encabezadoTabla =
+      tabla.getRow(1)
+
+
+    encabezadoTabla.font = {
+
+      bold: true,
+
+      color: {
+        argb: 'FFFFFF'
+      }
+
+    }
+
+
+    encabezadoTabla.fill = {
+
+      type: 'pattern',
+
+      pattern: 'solid',
+
+      fgColor: {
+        argb: '1E40AF'
+      }
+
+    }
+
+
+    encabezadoTabla.alignment = {
+
+      vertical: 'middle',
+
+      horizontal: 'center'
+
+    }
+
+
+    // =================================================
+    // FUNCIONES PARA OBTENER NOMBRES
+    // =================================================
+
+    const obtenerMarca =
+      (marcaId: number) => {
+
+        const marca =
+          state.marca?.find(
+            m =>
+              Number(m.id) ===
+              Number(marcaId)
+          )
+
+        return marca?.nombre || ''
+
+      }
+
+
+    const obtenerModelo =
+      (
+        marcaId: number,
+        modeloId: number
+      ) => {
+
+        const marca =
+          state.marca?.find(
+            m =>
+              Number(m.id) ===
+              Number(marcaId)
+          )
+
+        const modelo =
+          marca?.modelo?.find(
+            m =>
+              Number(m.id) ===
+              Number(modeloId)
+          )
+
+        return modelo?.nombre || ''
+
+      }
+
+
+    const obtenerTipo =
+      (tipoId: number) => {
+
+        const tipo =
+          state.tipo?.find(
+            t =>
+              Number(t.id) ===
+              Number(tipoId)
+          )
+
+        return tipo?.nombre || ''
+
+      }
+
+
+    const obtenerCiudad =
+      (ciudadId: string) => {
+
+        const ciudad =
+          state.ciudad?.find(
+            c =>
+              String(c.id) ===
+              String(ciudadId)
+          )
+
+        return ciudad?.nombre || ''
+
+      }
+
+
+    const obtenerSede =
+      (
+        ciudadId: string,
+        sedeId: number
+      ) => {
+
+        const ciudad =
+          state.ciudad?.find(
+            c =>
+              String(c.id) ===
+              String(ciudadId)
+          )
+
+        const sede =
+          ciudad?.centro?.find(
+            centro =>
+              Number(centro.id) ===
+              Number(sedeId)
+          )
+
+        return sede?.nombre || ''
+
+      }
+
+
+    // =================================================
+    // HOJA REALIZADOS
+    // =================================================
+
+    const realizadosSheet =
+      workbook.addWorksheet('Realizados')
+
+
+    realizadosSheet.columns = [
+
+      {
+        header: 'Activo',
+        key: 'activo',
+        width: 18
+      },
+
+      {
+        header: 'Serie',
+        key: 'serie',
+        width: 22
+      },
+
+      {
+        header: 'Marca',
+        key: 'marca',
+        width: 20
+      },
+
+      {
+        header: 'Modelo',
+        key: 'modelo',
+        width: 25
+      },
+
+      {
+        header: 'Tipo',
+        key: 'tipo',
+        width: 20
+      },
+
+      {
+        header: 'Ciudad',
+        key: 'ciudad',
+        width: 20
+      },
+
+      {
+        header: 'Sede',
+        key: 'sede',
+        width: 20
+      },
+
+      {
+        header: 'Área',
+        key: 'area',
+        width: 25
+      }
+
+    ]
+
+
+    equiposRealizadosFiltrados.forEach(eq => {
+
+      realizadosSheet.addRow({
+
+        activo:
+          eq.activo,
+
+        serie:
+          eq.serie,
+
+        marca:
+          obtenerMarca(eq.marca),
+
+        modelo:
+          obtenerModelo(
+            eq.marca,
+            eq.modelo
+          ),
+
+        tipo:
+          obtenerTipo(eq.tipo),
+
+        ciudad:
+          obtenerCiudad(eq.ciudad),
+
+        sede:
+          obtenerSede(
+            eq.ciudad,
+            eq.sede
+          ),
+
+        area:
+          eq.area
+
+      })
+
+    })
+
+
+    // =================================================
+    // ESTILO REALIZADOS
+    // =================================================
+
+    const encabezadoRealizados =
+      realizadosSheet.getRow(1)
+
+
+    encabezadoRealizados.font = {
+
+      bold: true,
+
+      color: {
+        argb: 'FFFFFF'
+      }
+
+    }
+
+
+    encabezadoRealizados.fill = {
+
+      type: 'pattern',
+
+      pattern: 'solid',
+
+      fgColor: {
+        argb: '16A34A'
+      }
+
+    }
+
+
+    encabezadoRealizados.alignment = {
+
+      vertical: 'middle',
+
+      horizontal: 'center'
+
+    }
+
+
+    // Ahora son solamente 8 columnas
+    realizadosSheet.autoFilter = {
+
+      from: 'A1',
+
+      to: 'H1'
+
+    }
+
+
+    // =================================================
+    // HOJA FALTANTES
+    // =================================================
+
+    const faltantesSheet =
+      workbook.addWorksheet('Faltantes')
+
+
+    faltantesSheet.columns = [
+
+      {
+        header: 'Activo',
+        key: 'activo',
+        width: 18
+      },
+
+      {
+        header: 'Serie',
+        key: 'serie',
+        width: 22
+      },
+
+      {
+        header: 'Marca',
+        key: 'marca',
+        width: 20
+      },
+
+      {
+        header: 'Modelo',
+        key: 'modelo',
+        width: 25
+      },
+
+      {
+        header: 'Tipo',
+        key: 'tipo',
+        width: 20
+      },
+
+      {
+        header: 'Ciudad',
+        key: 'ciudad',
+        width: 20
+      },
+
+      {
+        header: 'Sede',
+        key: 'sede',
+        width: 20
+      },
+
+      {
+        header: 'Área',
+        key: 'area',
+        width: 25
+      }
+
+    ]
+
+
+    equiposFaltantesFiltrados.forEach(eq => {
+
+      faltantesSheet.addRow({
+
+        activo:
+          eq.activo,
+
+        serie:
+          eq.serie,
+
+        marca:
+          obtenerMarca(eq.marca),
+
+        modelo:
+          obtenerModelo(
+            eq.marca,
+            eq.modelo
+          ),
+
+        tipo:
+          obtenerTipo(eq.tipo),
+
+        ciudad:
+          obtenerCiudad(eq.ciudad),
+
+        sede:
+          obtenerSede(
+            eq.ciudad,
+            eq.sede
+          ),
+
+        area:
+          eq.area
+
+      })
+
+    })
+
+
+    // =================================================
+    // ESTILO FALTANTES
+    // =================================================
+
+    const encabezadoFaltantes =
+      faltantesSheet.getRow(1)
+
+
+    encabezadoFaltantes.font = {
+
+      bold: true,
+
+      color: {
+        argb: 'FFFFFF'
+      }
+
+    }
+
+
+    encabezadoFaltantes.fill = {
+
+      type: 'pattern',
+
+      pattern: 'solid',
+
+      fgColor: {
+        argb: 'EA580C'
+      }
+
+    }
+
+
+    encabezadoFaltantes.alignment = {
+
+      vertical: 'middle',
+
+      horizontal: 'center'
+
+    }
+
+
+    // Ahora son solamente 8 columnas
+    faltantesSheet.autoFilter = {
+
+      from: 'A1',
+
+      to: 'H1'
+
+    }
+
+
+    // =================================================
+    // HOJA GRÁFICAS
+    // =================================================
+
+    const graficas =
+      workbook.addWorksheet('Gráficas')
+
+
+    graficas.getCell('A1').value =
+      'Reporte de Mantenimientos - Compu Inventory'
+
+
+    graficas.getCell('A1').font = {
+
+      bold: true,
+
+      size: 18,
+
+      color: {
+        argb: '1E40AF'
+      }
+
+    }
+
+
+    graficas.getCell('A3').value =
+      'Equipos con mantenimiento por categoría'
+
+
+    graficas.getCell('A3').font = {
+
+      bold: true,
+
+      size: 14
+
+    }
+
+
+    // =================================================
+    // GRÁFICA REALIZADOS
+    // =================================================
+
+    const imagenRealizadosId =
+      workbook.addImage({
+
+        base64:
+          imagenRealizados,
+
+        extension: 'png'
+
+      })
+
+
+    graficas.addImage(
+
+      imagenRealizadosId,
+
+      {
+
+        tl: {
+
+          col: 0,
+
+          row: 4
+
+        },
+
+        ext: {
+
+          width: 700,
+
+          height: 400
+
+        }
+
+      }
+
+    )
+
+
+    // =================================================
+    // GRÁFICA FALTANTES
+    // =================================================
+
+    graficas.getCell('A26').value =
+      'Equipos faltantes por categoría'
+
+
+    graficas.getCell('A26').font = {
+
+      bold: true,
+
+      size: 14
+
+    }
+
+
+    const imagenFaltantesId =
+      workbook.addImage({
+
+        base64:
+          imagenFaltantes,
+
+        extension: 'png'
+
+      })
+
+
+    graficas.addImage(
+
+      imagenFaltantesId,
+
+      {
+
+        tl: {
+
+          col: 0,
+
+          row: 27
+
+        },
+
+        ext: {
+
+          width: 700,
+
+          height: 400
+
+        }
+
+      }
+
+    )
+
+
+    // =================================================
+    // GENERAR ARCHIVO
+    // =================================================
+
+    const buffer =
+      await workbook.xlsx.writeBuffer()
+
+
+    // =================================================
+    // DESCARGAR
+    // =================================================
+
+    const blob =
+      new Blob(
+
+        [buffer],
+
+        {
+
+          type:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        }
+
+      )
+
+
+    const url =
+      window.URL.createObjectURL(blob)
+
+
+    const enlace =
+      document.createElement('a')
+
+
+    enlace.href = url
+
+
+    const nombreCategoria =
+      categoriaFiltro === 'todas'
+        ? 'Todas'
+        : categoriasFiltradas[0]?.nombre ||
+        'Categoria'
+
+
+    enlace.download =
+      `Reporte_CompuInventory_${nombreCategoria}.xlsx`
+
+
+    document.body.appendChild(enlace)
+
+    enlace.click()
+
+    document.body.removeChild(enlace)
+
+    window.URL.revokeObjectURL(url)
+
+
+  } catch (error) {
+
+    console.error(
+      'Error exportando Excel:',
+      error
+    )
+
+    alert(
+      'Ocurrió un error al generar el Excel.'
+    )
+
   }
+
+}
 
 
   // =====================================================
