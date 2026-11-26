@@ -27,6 +27,14 @@ export default function Reportes() {
   const [ciudadFiltro, setCiudadFiltro] =
     useState<string>('todas')
 
+  const [sedeFiltro, setSedeFiltro] = useState<string>('todas')
+
+  const sedesDisponibles = useMemo(() => {
+    if (ciudadFiltro === 'todas') return []
+    const ciudadSeleccionada = (state.ciudad || []).find(c => String(c.id) === ciudadFiltro)
+    return ciudadSeleccionada?.centro || []
+  }, [state.ciudad, ciudadFiltro])
+
   const [modoConsulta, setModoConsulta] = useState<'ciclo' | 'historico'>('ciclo')
   const [fechaDesde, setFechaDesde] = useState<string>('')
   const [fechaHasta, setFechaHasta] = useState<string>('')
@@ -87,10 +95,11 @@ export default function Reportes() {
     return periodoGuardado === periodoActual.ciclo && anioGuardado === periodoActual.anio
   }
 
+  // En ambos modos se respeta el rango de fechas seleccionado.
+  // En ciclo actual, además se limita al ciclo vigente.
   const mantenimientoEnConsulta = (m: any) =>
-    modoConsulta === 'ciclo'
-      ? mantenimientoDelCicloActual(m)
-      : fechaDentroDelFiltro(m.fecha)
+    fechaDentroDelFiltro(m.fecha) &&
+    (modoConsulta === 'ciclo' ? mantenimientoDelCicloActual(m) : true)
 
   const graficaRealizadosRef =
     useRef<HTMLDivElement>(null)
@@ -124,11 +133,13 @@ export default function Reportes() {
     const inventarioCompleto = state.equipos || []
     const tipos = state.tipo || []
     const equiposTotales = inventarioCompleto.filter(eq =>
-      ciudadFiltro === 'todas' || String(eq.ciudad) === ciudadFiltro
+      (ciudadFiltro === 'todas' || String(eq.ciudad) === ciudadFiltro) &&
+      (sedeFiltro === 'todas' || String(eq.sede) === sedeFiltro)
     )
     const mantenimientos = (state.mantenimiento || []).filter(m =>
       mantenimientoEnConsulta(m) &&
-      (ciudadFiltro === 'todas' || String(m.ciudad) === ciudadFiltro)
+      (ciudadFiltro === 'todas' || String(m.ciudad) === ciudadFiltro) &&
+      (sedeFiltro === 'todas' || String(m.sede) === sedeFiltro)
     )
     const activosConMantenimiento = new Set(
       mantenimientos.map(m => String(m.activo ?? '').trim()).filter(Boolean)
@@ -178,7 +189,7 @@ export default function Reportes() {
       totalInventario, totalRealizados, totalFaltantes, porcentajeGlobal,
       desgloseCategorias, equiposRealizados, equiposFaltantes, mantenimientosFiltrados: mantenimientos
     }
-  }, [state, ciudadFiltro, modoConsulta, fechaDesde, fechaHasta])
+  }, [state, ciudadFiltro, sedeFiltro, modoConsulta, fechaDesde, fechaHasta])
 
 
   // =====================================================
@@ -211,7 +222,8 @@ export default function Reportes() {
 
   const mantenimientosPorCiudad = useMemo(() => {
     const inventario = (state.equipos || []).filter(eq =>
-      ciudadFiltro === 'todas' || String(eq.ciudad) === ciudadFiltro
+      (ciudadFiltro === 'todas' || String(eq.ciudad) === ciudadFiltro) &&
+      (sedeFiltro === 'todas' || String(eq.sede) === sedeFiltro)
     )
     const mantenimientos = reportesData.mantenimientosFiltrados
     const ciudades = state.ciudad || []
@@ -256,7 +268,7 @@ export default function Reportes() {
       return { id, nombre: ciudad?.nombre || id, realizados: realizadosPorCiudad.get(id)?.size || 0, faltantes: faltantesPorCiudad.get(id)?.size || 0 }
     }).filter(c => (c.realizados > 0 || c.faltantes > 0) && (ciudadFiltro === 'todas' || c.id === ciudadFiltro || String((state.ciudad || []).find(x => x.nombre === c.nombre)?.id) === ciudadFiltro))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-  }, [state, categoriaFiltro, ciudadFiltro, reportesData])
+  }, [state, categoriaFiltro, ciudadFiltro, sedeFiltro, reportesData])
 
 
   // =====================================================
@@ -282,9 +294,11 @@ export default function Reportes() {
     ])
 
   const equiposFaltantesParaExportar = useMemo(() => {
-    if (ciudadFiltro === 'todas') return equiposFaltantesFiltrados
-    return equiposFaltantesFiltrados.filter(eq => String(eq.ciudad) === ciudadFiltro)
-  }, [equiposFaltantesFiltrados, ciudadFiltro])
+    return equiposFaltantesFiltrados.filter(eq =>
+      (ciudadFiltro === 'todas' || String(eq.ciudad) === ciudadFiltro) &&
+      (sedeFiltro === 'todas' || String(eq.sede) === sedeFiltro)
+    )
+  }, [equiposFaltantesFiltrados, ciudadFiltro, sedeFiltro])
 
 
   // =====================================================
@@ -454,6 +468,13 @@ export default function Reportes() {
         valor: ciudadFiltro === 'todas'
           ? 'Todas las ciudades'
           : (state.ciudad || []).find(c => String(c.id) === ciudadFiltro)?.nombre || ciudadFiltro
+      })
+
+      resumen.addRow({
+        indicador: 'Sede',
+        valor: sedeFiltro === 'todas'
+          ? 'Todas las sedes'
+          : sedesDisponibles.find(s => String(s.id) === sedeFiltro)?.nombre || sedeFiltro
       })
 
 
@@ -1145,7 +1166,10 @@ export default function Reportes() {
             </label>
             <select
               value={ciudadFiltro}
-              onChange={(e) => setCiudadFiltro(e.target.value)}
+              onChange={(e) => {
+                setCiudadFiltro(e.target.value)
+                setSedeFiltro('todas')
+              }}
               className="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
               <option value="todas">Todas las ciudades</option>
@@ -1155,21 +1179,38 @@ export default function Reportes() {
             </select>
           </div>
 
+          {ciudadFiltro !== 'todas' && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+                Filtrar sede:
+              </label>
+              <select
+                value={sedeFiltro}
+                onChange={e => setSedeFiltro(e.target.value)}
+                className="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="todas">Todas las sedes</option>
+                {sedesDisponibles.map(sede => (
+                  <option key={sede.id} value={String(sede.id)}>
+                    {sede.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {modoConsulta === 'historico' && <>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">Desde:</label>
-              <input type="date" value={fechaDesde} max={fechaHasta || undefined}
-                onChange={e => setFechaDesde(e.target.value)}
-                className="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">Hasta:</label>
-              <input type="date" value={fechaHasta} min={fechaDesde || undefined}
-                onChange={e => setFechaHasta(e.target.value)}
-                className="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-            </div>
-          </>}
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">Desde:</label>
+            <input type="date" value={fechaDesde} max={fechaHasta || undefined}
+              onChange={e => setFechaDesde(e.target.value)}
+              className="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">Hasta:</label>
+            <input type="date" value={fechaHasta} min={fechaDesde || undefined}
+              onChange={e => setFechaHasta(e.target.value)}
+              className="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          </div>
 
           {/* EXPORTAR */}
 
@@ -1283,7 +1324,7 @@ export default function Reportes() {
 
             <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-orange-50 text-orange-700">
 
-              {100 - reportesData.porcentajeGlobal}% pendiente
+              {Number((100 - reportesData.porcentajeGlobal).toFixed(1))}% pendiente
 
             </span>
 
