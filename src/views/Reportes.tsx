@@ -136,10 +136,12 @@ export default function Reportes() {
       (ciudadFiltro === 'todas' || String(eq.ciudad) === ciudadFiltro) &&
       (sedeFiltro === 'todas' || String(eq.sede) === sedeFiltro)
     )
+    // El filtro de sede se aplica al inventario actual, no al registro
+    // histórico de mantenimiento. Un equipo puede haber sido atendido en
+    // otra sede y luego trasladado a la sede que estamos consultando.
     const mantenimientos = (state.mantenimiento || []).filter(m =>
       mantenimientoEnConsulta(m) &&
-      (ciudadFiltro === 'todas' || String(m.ciudad) === ciudadFiltro) &&
-      (sedeFiltro === 'todas' || String(m.sede) === sedeFiltro)
+      (ciudadFiltro === 'todas' || String(m.ciudad) === ciudadFiltro)
     )
     const activosConMantenimiento = new Set(
       mantenimientos.map(m => String(m.activo ?? '').trim()).filter(Boolean)
@@ -238,7 +240,7 @@ export default function Reportes() {
     mantenimientosOrdenados.forEach(m => {
       const activo = String(m.activo ?? '').trim()
       const tipoEquipo = inventarioPorActivo.get(activo)?.tipo ?? m.tipo
-      if (activo && !ultimoMantenimiento.has(activo) &&
+      if (activo && inventarioPorActivo.has(activo) && !ultimoMantenimiento.has(activo) &&
         (categoriaFiltro === 'todas' || String(tipoEquipo) === categoriaFiltro)) {
         ultimoMantenimiento.set(activo, m)
       }
@@ -641,12 +643,22 @@ export default function Reportes() {
 
       // Los equipos realizados deben mostrar los datos guardados
       // en el registro de mantenimiento, no los del inventario actual.
+      const activosInventarioFiltrado = new Set(
+        (state.equipos || [])
+          .filter(eq => {
+            const coincideCiudad = ciudadFiltro === 'todas' || String(eq.ciudad) === ciudadFiltro
+            const coincideSede = sedeFiltro === 'todas' || String(eq.sede) === sedeFiltro
+            const coincideCategoria = categoriaFiltro === 'todas' || String(eq.tipo) === categoriaFiltro
+            return coincideCiudad && coincideSede && coincideCategoria
+          })
+          .map(eq => String(eq.activo ?? '').trim())
+          .filter(Boolean)
+      )
+
       const mantenimientosParaExportar = reportesData.mantenimientosFiltrados
         .filter(m => {
           const activo = String(m.activo ?? '').trim()
-          const equipo = (state.equipos || []).find(eq => String(eq.activo ?? '').trim() === activo)
-          const coincideCategoria = categoriaFiltro === 'todas' || String(equipo?.tipo ?? m.tipo) === categoriaFiltro
-          return activo !== '' && coincideCategoria
+          return activo !== '' && activosInventarioFiltrado.has(activo)
         })
         .sort((a, b) => {
           const fechaA = new Date(a.fecha).getTime()
@@ -1035,8 +1047,13 @@ export default function Reportes() {
         : ((state.ciudad || []).find(c => String(c.id) === ciudadFiltro)?.nombre || ciudadFiltro)
           .replace(/[^a-zA-Z0-9_-]/g, '_')
 
+      const nombreSede = sedeFiltro === 'todas'
+        ? 'TodasLasSedes'
+        : (sedesDisponibles.find(s => String(s.id) === sedeFiltro)?.nombre || sedeFiltro)
+          .replace(/[^a-zA-Z0-9_-]/g, '_')
+
       enlace.download =
-        `Reporte_CompuInventory_${modoConsulta === 'ciclo' ? 'CicloActual' : `Historico_${fechaDesde || 'Inicio'}_${fechaHasta || 'Fin'}`}_${nombreCategoria}_${nombreCiudad}.xlsx`
+        `Reporte_CompuInventory_${modoConsulta === 'ciclo' ? 'CicloActual' : `Historico_${fechaDesde || 'Inicio'}_${fechaHasta || 'Fin'}`}_${nombreCategoria}_${nombreCiudad}_${nombreSede}.xlsx`
 
 
       document.body.appendChild(enlace)
