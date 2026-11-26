@@ -1112,7 +1112,7 @@ export default function Reportes() {
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
 
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-start gap-2">
             <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">Consulta:</label>
             <select
               value={modoConsulta}
@@ -1126,7 +1126,7 @@ export default function Reportes() {
 
           {/* FILTRO */}
 
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-start gap-2">
 
             <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">
 
@@ -1173,7 +1173,7 @@ export default function Reportes() {
 
           </div>
 
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-start gap-2">
             <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">
               Filtrar ciudad:
             </label>
@@ -1193,7 +1193,7 @@ export default function Reportes() {
           </div>
 
           {ciudadFiltro !== 'todas' && (
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-start gap-2">
               <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">
                 Filtrar sede:
               </label>
@@ -1212,13 +1212,13 @@ export default function Reportes() {
             </div>
           )}
 
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-start gap-2">
             <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">Desde:</label>
             <input type="date" value={fechaDesde} max={fechaHasta || undefined}
               onChange={e => setFechaDesde(e.target.value)}
               className="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg p-2.5 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" />
           </div>
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-start gap-2">
             <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">Hasta:</label>
             <input type="date" value={fechaHasta} min={fechaDesde || undefined}
               onChange={e => setFechaHasta(e.target.value)}

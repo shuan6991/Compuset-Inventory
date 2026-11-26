@@ -933,7 +933,7 @@ export default function Mantenimientos() {
 
                 {/* LISTADO PAGINADO */}
 
-                <div key={filtroEstado} className="flex flex-col gap-4">
+                <div key={filtroEstado} className="flex flex-col gap-7">
                     {elementosPaginados.length === 0 ? (
 
                     <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-slate-500">
